@@ -135,4 +135,17 @@ public class Produto {
         return updatedAt;
     }
 
+    @PrePersist
+    protected void prePersist() {
+        LocalDateTime agora = LocalDateTime.now();
+
+        this.createdAt = agora;
+        this.updatedAt = agora;
+    }
+
+    @PreUpdate
+    protected void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+
 }
