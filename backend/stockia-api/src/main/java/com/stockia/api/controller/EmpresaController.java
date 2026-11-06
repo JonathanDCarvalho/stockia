@@ -6,6 +6,8 @@ import com.stockia.api.dto.response.EmpresaResponse;
 import com.stockia.api.entity.Empresa;
 import com.stockia.api.service.EmpresaService;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,48 +18,76 @@ import java.util.List;
 @RequestMapping("/api/empresas")
 public class EmpresaController {
 
-    private final EmpresaService empresaService;
+        private final EmpresaService empresaService;
 
-    public EmpresaController(EmpresaService empresaService) {
-        this.empresaService = empresaService;
-    }
+        public EmpresaController(EmpresaService empresaService) {
+                this.empresaService = empresaService;
+        }
 
-    @PostMapping
-    public ResponseEntity<EmpresaResponse> cadastrar(
-            @RequestBody EmpresaRequest request) {
+        @PostMapping
+        public ResponseEntity<EmpresaResponse> cadastrar(
+                        @Valid @RequestBody EmpresaRequest request) {
 
-        Empresa empresa = new Empresa();
+                Empresa empresa = new Empresa();
 
-        empresa.setNome(request.nome());
-        empresa.setCnpj(request.cnpj());
+                empresa.setNome(request.nome());
+                empresa.setCnpj(request.cnpj());
 
-        Empresa empresaSalva = empresaService.cadastrar(empresa);
+                Empresa empresaSalva = empresaService.cadastrar(empresa);
 
-        EmpresaResponse response = new EmpresaResponse(
-                empresaSalva.getId(),
-                empresaSalva.getNome(),
-                empresaSalva.getCnpj(),
-                empresaSalva.getAtivo(),
-                empresaSalva.getCreatedAt());
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(toResponse(empresaSalva));
+        }
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
+        @GetMapping
+        public ResponseEntity<List<EmpresaResponse>> listarTodos() {
 
-    @GetMapping
-    public ResponseEntity<List<EmpresaResponse>> listarTodos() {
+                List<EmpresaResponse> empresas = empresaService.listarTodos()
+                                .stream()
+                                .map(this::toResponse)
+                                .toList();
 
-        List<EmpresaResponse> empresas = empresaService.listarTodos()
-                .stream()
-                .map(empresa -> new EmpresaResponse(
-                        empresa.getId(),
-                        empresa.getNome(),
-                        empresa.getCnpj(),
-                        empresa.getAtivo(),
-                        empresa.getCreatedAt()))
-                .toList();
+                return ResponseEntity.ok(empresas);
+        }
 
-        return ResponseEntity.ok(empresas);
-    }
+        @GetMapping("/{id}")
+        public ResponseEntity<EmpresaResponse> buscarPorId(
+                        @PathVariable Long id) {
+
+                Empresa empresa = empresaService.buscarPorId(id);
+
+                return ResponseEntity.ok(toResponse(empresa));
+        }
+
+        @PutMapping("/{id}")
+        public ResponseEntity<EmpresaResponse> atualizar(
+                        @PathVariable Long id,
+                        @RequestBody EmpresaRequest request) {
+
+                Empresa dadosAtualizados = new Empresa();
+                dadosAtualizados.setNome(request.nome());
+
+                Empresa empresaAtualizada = empresaService.atualizar(id, dadosAtualizados);
+
+                return ResponseEntity.ok(toResponse(empresaAtualizada));
+        }
+
+        @DeleteMapping("/{id}")
+        public ResponseEntity<Void> desativar(@PathVariable Long id) {
+
+                empresaService.desativar(id);
+
+                return ResponseEntity.noContent().build();
+        }
+
+        private EmpresaResponse toResponse(Empresa empresa) {
+
+                return new EmpresaResponse(
+                                empresa.getId(),
+                                empresa.getNome(),
+                                empresa.getCnpj(),
+                                empresa.getAtivo(),
+                                empresa.getCreatedAt());
+        }
 }

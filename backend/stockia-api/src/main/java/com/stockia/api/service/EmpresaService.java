@@ -1,8 +1,10 @@
 package com.stockia.api.service;
 
 import com.stockia.api.entity.Empresa;
+import com.stockia.api.exception.RecursoNaoEncontradoException;
 import com.stockia.api.repository.EmpresaRepository;
 import com.stockia.api.validation.CnpjValidator;
+import com.stockia.api.exception.RecursoNaoEncontradoException;
 
 import java.util.List;
 
@@ -52,6 +54,41 @@ public class EmpresaService {
 
     @Transactional(readOnly = true)
     public List<Empresa> listarTodos() {
-        return empresaRepository.findAll();
+        return empresaRepository.findAllByAtivoTrue();
     }
+
+    @Transactional(readOnly = true)
+    public Empresa buscarPorId(Long id) {
+
+        return empresaRepository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Empresa não encontrada."));
+    }
+
+    @Transactional
+    public Empresa atualizar(Long id, Empresa dadosAtualizados) {
+
+        Empresa empresa = buscarPorId(id);
+
+        if (dadosAtualizados.getNome() == null ||
+                dadosAtualizados.getNome().isBlank()) {
+            throw new IllegalArgumentException(
+                    "O nome da empresa é obrigatório.");
+        }
+
+        empresa.setNome(dadosAtualizados.getNome().trim());
+
+        return empresaRepository.save(empresa);
+    }
+
+    @Transactional
+    public void desativar(Long id) {
+
+        Empresa empresa = buscarPorId(id);
+
+        empresa.setAtivo(false);
+
+        empresaRepository.save(empresa);
+    }
+
 }
