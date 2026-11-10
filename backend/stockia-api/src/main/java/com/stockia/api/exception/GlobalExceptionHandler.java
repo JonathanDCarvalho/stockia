@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -49,5 +50,45 @@ public class GlobalExceptionHandler {
                                 .status(HttpStatus.NOT_FOUND)
                                 .body(resposta);
         }
+
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<Map<String, Object>> tratarArgumentoInvalido(
+                        IllegalArgumentException exception) {
+
+                Map<String, Object> resposta = Map.of(
+                                "timestamp", LocalDateTime.now(),
+                                "status", HttpStatus.BAD_REQUEST.value(),
+                                "erro", "Bad Request",
+                                "mensagem", exception.getMessage());
+
+                return ResponseEntity.badRequest().body(resposta);
+        }
+
+        @ExceptionHandler(RecursoConflitoException.class)
+        public ResponseEntity<Map<String, Object>> tratarConflito(
+                        RecursoConflitoException exception) {
+
+                Map<String, Object> resposta = Map.of(
+                                "timestamp", LocalDateTime.now(),
+                                "status", HttpStatus.CONFLICT.value(),
+                                "erro", "Conflict",
+                                "mensagem", exception.getMessage());
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(resposta);
+        }
+
+        @ExceptionHandler(DataIntegrityViolationException.class)
+        public ResponseEntity<Map<String, Object>> tratarViolacaoBanco(
+                        DataIntegrityViolationException exception) {
+
+                Map<String, Object> resposta = Map.of(
+                                "timestamp", LocalDateTime.now(),
+                                "status", HttpStatus.CONFLICT.value(),
+                                "erro", "Conflict",
+                                "mensagem", "A operação viola uma restrição do banco de dados.");
+
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(resposta);
+        }
+        
 
 }
