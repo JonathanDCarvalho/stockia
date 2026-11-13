@@ -1,3 +1,4 @@
+
 package com.stockia.api.entity;
 
 import jakarta.persistence.*;
@@ -17,6 +18,10 @@ public class Produto {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fornecedor_id")
+    private Fornecedor fornecedor;
 
     @Column(nullable = false, length = 150)
     private String nome;
@@ -61,6 +66,14 @@ public class Produto {
 
     public void setEmpresa(Empresa empresa) {
         this.empresa = empresa;
+    }
+
+    public Fornecedor getFornecedor() {
+        return fornecedor;
+    }
+
+    public void setFornecedor(Fornecedor fornecedor) {
+        this.fornecedor = fornecedor;
     }
 
     public String getNome() {

@@ -2,10 +2,12 @@
 package com.stockia.api.service;
 
 import com.stockia.api.entity.Empresa;
+import com.stockia.api.entity.Fornecedor;
 import com.stockia.api.entity.Produto;
 import com.stockia.api.exception.RecursoNaoEncontradoException;
 import com.stockia.api.exception.RecursoConflitoException;
 import com.stockia.api.repository.EmpresaRepository;
+import com.stockia.api.repository.FornecedorRepository;
 import com.stockia.api.repository.ProdutoRepository;
 
 import org.springframework.stereotype.Service;
@@ -20,41 +22,52 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final EmpresaRepository empresaRepository;
+    private final FornecedorRepository fornecedorRepository;
 
     public ProdutoService(
             ProdutoRepository produtoRepository,
-            EmpresaRepository empresaRepository) {
+            EmpresaRepository empresaRepository,
+            FornecedorRepository fornecedorRepository) {
 
         this.produtoRepository = produtoRepository;
         this.empresaRepository = empresaRepository;
+        this.fornecedorRepository = fornecedorRepository;
     }
 
-    // CADASTRAR PRODUTO
     @Transactional
-    public Produto cadastrar(Long empresaId, Produto produto) {
+    public Produto cadastrar(
+            Long empresaId,
+            Long fornecedorId,
+            Produto produto) {
 
         Empresa empresa = buscarEmpresaAtiva(empresaId);
 
         validarDados(produto);
 
+        Fornecedor fornecedor = buscarFornecedorAtivo(
+                empresaId, fornecedorId);
+
         String sku = normalizarSku(produto.getSku());
 
         if (produtoRepository.existsByEmpresaIdAndSku(
                 empresaId, sku)) {
+
             throw new RecursoConflitoException(
                     "Já existe um produto com esse SKU nesta empresa.");
         }
 
         produto.setNome(produto.getNome().trim());
         produto.setSku(sku);
+        produto.setDescricao(normalizarDescricao(produto.getDescricao()));
         produto.setQuantidadeEstoque(0);
+        produto.setEstoqueMinimo(produto.getEstoqueMinimo());
+        produto.setFornecedor(fornecedor);
         produto.setAtivo(true);
         produto.setEmpresa(empresa);
 
         return produtoRepository.save(produto);
     }
 
-    // LISTAR PRODUTOS ATIVOS DA EMPRESA
     @Transactional(readOnly = true)
     public List<Produto> listarPorEmpresa(Long empresaId) {
 
@@ -64,7 +77,6 @@ public class ProdutoService {
                 .findAllByEmpresaIdAndAtivoTrue(empresaId);
     }
 
-    // BUSCAR PRODUTO POR ID
     @Transactional(readOnly = true)
     public Produto buscarPorId(Long empresaId, Long produtoId) {
 
@@ -77,22 +89,24 @@ public class ProdutoService {
                         "Produto não encontrado nesta empresa."));
     }
 
-    // ATUALIZAR PRODUTO
     @Transactional
     public Produto atualizar(
             Long empresaId,
             Long produtoId,
+            Long fornecedorId,
             Produto dadosAtualizados) {
 
         Produto produto = buscarPorId(empresaId, produtoId);
 
         validarDados(dadosAtualizados);
 
+        Fornecedor fornecedor = buscarFornecedorAtivo(
+                empresaId, fornecedorId);
+
         String sku = normalizarSku(dadosAtualizados.getSku());
 
-        boolean skuDuplicado =
-                produtoRepository.existsByEmpresaIdAndSkuAndIdNot(
-                        empresaId, sku, produtoId);
+        boolean skuDuplicado = produtoRepository.existsByEmpresaIdAndSkuAndIdNot(
+                empresaId, sku, produtoId);
 
         if (skuDuplicado) {
             throw new RecursoConflitoException(
@@ -101,18 +115,16 @@ public class ProdutoService {
 
         produto.setNome(dadosAtualizados.getNome().trim());
         produto.setSku(sku);
-        produto.setDescricao(dadosAtualizados.getDescricao());
+        produto.setDescricao(
+                normalizarDescricao(dadosAtualizados.getDescricao()));
         produto.setPrecoCusto(dadosAtualizados.getPrecoCusto());
         produto.setPrecoVenda(dadosAtualizados.getPrecoVenda());
         produto.setEstoqueMinimo(dadosAtualizados.getEstoqueMinimo());
-
-        // A quantidade em estoque não é alterada aqui.
-        // Ela será controlada pelo módulo de movimentações.
+        produto.setFornecedor(fornecedor);
 
         return produtoRepository.save(produto);
     }
 
-    // DESATIVAR PRODUTO
     @Transactional
     public void desativar(Long empresaId, Long produtoId) {
 
@@ -123,7 +135,6 @@ public class ProdutoService {
         produtoRepository.save(produto);
     }
 
-    // VALIDAR EMPRESA
     private Empresa buscarEmpresaAtiva(Long empresaId) {
 
         return empresaRepository
@@ -132,27 +143,41 @@ public class ProdutoService {
                         "Empresa não encontrada ou inativa."));
     }
 
-    // VALIDAR DADOS DO PRODUTO
+    private Fornecedor buscarFornecedorAtivo(
+            Long empresaId,
+            Long fornecedorId) {
+
+        return fornecedorRepository
+                .findByIdAndEmpresaIdAndAtivoTrue(
+                        fornecedorId, empresaId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Fornecedor não encontrado ou inativo nesta empresa."));
+    }
+
     private void validarDados(Produto produto) {
 
         if (produto.getNome() == null ||
                 produto.getNome().isBlank()) {
+
             throw new IllegalArgumentException(
                     "O nome do produto é obrigatório.");
         }
 
         if (produto.getNome().trim().length() > 150) {
+
             throw new IllegalArgumentException(
                     "O nome deve ter no máximo 150 caracteres.");
         }
 
         if (produto.getSku() == null ||
                 produto.getSku().isBlank()) {
+
             throw new IllegalArgumentException(
                     "O SKU do produto é obrigatório.");
         }
 
         if (normalizarSku(produto.getSku()).length() > 50) {
+
             throw new IllegalArgumentException(
                     "O SKU deve ter no máximo 50 caracteres.");
         }
@@ -160,26 +185,41 @@ public class ProdutoService {
         validarPreco(produto.getPrecoCusto(), "custo");
         validarPreco(produto.getPrecoVenda(), "venda");
 
-        if (produto.getEstoqueMinimo() == null ||
-                produto.getEstoqueMinimo() < 0) {
+        if (produto.getEstoqueMinimo() == null) {
+
+            throw new IllegalArgumentException(
+                    "O estoque mínimo é obrigatório.");
+        }
+
+        if (produto.getEstoqueMinimo() < 0) {
+
             throw new IllegalArgumentException(
                     "O estoque mínimo não pode ser negativo.");
         }
     }
 
-    // NORMALIZAR SKU
     private String normalizarSku(String sku) {
+
         return sku.trim().toUpperCase(Locale.ROOT);
     }
 
-    // VALIDAR PREÇOS
     private void validarPreco(BigDecimal preco, String tipo) {
 
         if (preco == null ||
                 preco.compareTo(BigDecimal.ZERO) < 0) {
+
             throw new IllegalArgumentException(
                     "O preço de " + tipo +
-                    " não pode ser negativo ou nulo.");
+                            " não pode ser negativo ou nulo.");
         }
+    }
+
+    private String normalizarDescricao(String descricao) {
+
+        if (descricao == null || descricao.isBlank()) {
+            return null;
+        }
+
+        return descricao.trim();
     }
 }

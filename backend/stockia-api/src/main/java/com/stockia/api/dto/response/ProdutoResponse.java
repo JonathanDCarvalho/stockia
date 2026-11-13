@@ -1,4 +1,3 @@
-
 package com.stockia.api.dto.response;
 
 import java.math.BigDecimal;
@@ -7,6 +6,8 @@ import java.time.LocalDateTime;
 public record ProdutoResponse(
         Long id,
         Long empresaId,
+        Long fornecedorId,
+        String fornecedorNome,
         String nome,
         String sku,
         String descricao,
@@ -16,5 +17,5 @@ public record ProdutoResponse(
         Integer estoqueMinimo,
         Boolean ativo,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {}
+        LocalDateTime updatedAt) {
+}

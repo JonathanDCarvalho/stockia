@@ -31,7 +31,10 @@ public class ProdutoController {
 
         Produto produto = converterParaEntidade(request);
 
-        Produto produtoSalvo = produtoService.cadastrar(empresaId, produto);
+        Produto produtoSalvo = produtoService.cadastrar(
+                empresaId,
+                request.fornecedorId(),
+                produto);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -58,8 +61,7 @@ public class ProdutoController {
 
         Produto produto = produtoService.buscarPorId(empresaId, produtoId);
 
-        return ResponseEntity.ok(
-                converterParaResponse(produto));
+        return ResponseEntity.ok(converterParaResponse(produto));
     }
 
     @PutMapping("/{produtoId}")
@@ -73,10 +75,10 @@ public class ProdutoController {
         Produto produtoAtualizado = produtoService.atualizar(
                 empresaId,
                 produtoId,
+                request.fornecedorId(),
                 dadosAtualizados);
 
-        return ResponseEntity.ok(
-                converterParaResponse(produtoAtualizado));
+        return ResponseEntity.ok(converterParaResponse(produtoAtualizado));
     }
 
     @DeleteMapping("/{produtoId}")
@@ -100,14 +102,27 @@ public class ProdutoController {
         produto.setPrecoVenda(request.precoVenda());
         produto.setEstoqueMinimo(request.estoqueMinimo());
 
+        // O Service fará a busca e validação do fornecedor.
+        // Não associamos a entidade diretamente pelo Controller.
+
         return produto;
     }
 
     private ProdutoResponse converterParaResponse(Produto produto) {
 
+        Long fornecedorId = null;
+        String fornecedorNome = null;
+
+        if (produto.getFornecedor() != null) {
+            fornecedorId = produto.getFornecedor().getId();
+            fornecedorNome = produto.getFornecedor().getNome();
+        }
+
         return new ProdutoResponse(
                 produto.getId(),
                 produto.getEmpresa().getId(),
+                fornecedorId,
+                fornecedorNome,
                 produto.getNome(),
                 produto.getSku(),
                 produto.getDescricao(),
