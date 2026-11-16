@@ -34,7 +34,9 @@ public class ProdutoController {
         Produto produtoSalvo = produtoService.cadastrar(
                 empresaId,
                 request.fornecedorId(),
-                produto);
+                produto,
+                request.quantidadeInicial(),
+                request.categoriaId());
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -76,7 +78,8 @@ public class ProdutoController {
                 empresaId,
                 produtoId,
                 request.fornecedorId(),
-                dadosAtualizados);
+                dadosAtualizados,
+                request.categoriaId());
 
         return ResponseEntity.ok(converterParaResponse(produtoAtualizado));
     }
@@ -132,6 +135,8 @@ public class ProdutoController {
                 produto.getEstoqueMinimo(),
                 produto.getAtivo(),
                 produto.getCreatedAt(),
-                produto.getUpdatedAt());
+                produto.getUpdatedAt(),
+                produto.getCategoria() == null ? null : produto.getCategoria().getId(),
+                produto.getCategoria() == null ? null : produto.getCategoria().getNome());
     }
 }

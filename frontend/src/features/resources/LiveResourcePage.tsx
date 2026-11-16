@@ -50,7 +50,10 @@ export function LiveResourcePage({
   const rows =
     query.data?.filter(
       (row) =>
-        (row.nome + ("sku" in row ? row.sku : ""))
+        (
+          row.nome +
+          ("sku" in row ? ` ${row.sku} ${row.categoriaNome ?? ""}` : "")
+        )
           .toLowerCase()
           .includes(search.toLowerCase()) &&
         (!lowStockOnly ||
@@ -123,6 +126,7 @@ export function LiveResourcePage({
                   {(type === "products"
                     ? [
                         "Produto",
+                        "Categoria",
                         "Fornecedor",
                         "Custo unitário",
                         "Preço de venda",
@@ -163,6 +167,7 @@ export function LiveResourcePage({
                     </td>
                     {"quantidadeEstoque" in row ? (
                       <>
+                        <td>{row.categoriaNome || "Sem categoria"}</td>
                         <td>{row.fornecedorNome || "—"}</td>
                         <td>{formatCurrency(row.precoCusto)}</td>
                         <td>{formatCurrency(row.precoVenda)}</td>

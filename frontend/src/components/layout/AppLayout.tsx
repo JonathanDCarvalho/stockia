@@ -144,7 +144,7 @@ function Sidebar({ open, close }: SidebarProps) {
           <ChartNoAxesCombined size={17} />
           <div>
             <strong>Sessão autenticada</strong>
-            <span>StockIA API</span>
+            <span>Gestão de estoque</span>
           </div>
         </div>
       </aside>
@@ -241,7 +241,7 @@ function Assistant() {
             </div>
             <div>
               <strong>Assistente StockIA</strong>
-              <span>Integração pendente</span>
+              <span>Indisponível</span>
             </div>
             <button className="icon-button" onClick={() => setOpen(false)}>
               <X size={18} />
@@ -250,10 +250,7 @@ function Assistant() {
           <div className="assistant-body">
             <div className="assistant-message">
               <strong>Olá, sou o assistente StockIA.</strong>
-              <p>
-                O serviço de IA ainda não está conectado. Quando disponível,
-                poderei consultar dados autorizados da empresa ativa.
-              </p>
+              <p>O assistente está indisponível no momento.</p>
             </div>
             <div className="suggestions">
               {suggestions.map((item) => (

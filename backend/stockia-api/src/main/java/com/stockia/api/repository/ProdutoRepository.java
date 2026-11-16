@@ -18,10 +18,10 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
         List<Produto> findByEmpresaId(Long empresaId);
 
-        @EntityGraph(attributePaths = { "empresa", "fornecedor" })
+        @EntityGraph(attributePaths = { "empresa", "fornecedor", "categoria" })
         List<Produto> findAllByEmpresaIdAndAtivoTrue(Long empresaId);
 
-        @EntityGraph(attributePaths = { "empresa", "fornecedor" })
+        @EntityGraph(attributePaths = { "empresa", "fornecedor", "categoria" })
         Optional<Produto> findByIdAndEmpresaIdAndAtivoTrue(
                         Long id, Long empresaId);
 

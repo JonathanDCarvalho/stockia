@@ -22,7 +22,7 @@ export async function apiRequest<T>(
     response = await fetch(base + path, { ...options, headers })
   } catch {
     throw new ApiError(
-      "Não foi possível conectar à API. Verifique o backend.",
+      "Não foi possível conectar ao serviço. Tente novamente em instantes.",
       0,
     )
   }

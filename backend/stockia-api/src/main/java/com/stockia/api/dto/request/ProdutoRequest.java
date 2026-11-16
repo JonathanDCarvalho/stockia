@@ -4,6 +4,7 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -22,7 +23,11 @@ public record ProdutoRequest(
 
                 @NotNull(message = "O estoque mínimo é obrigatório.") @PositiveOrZero(message = "O estoque mínimo não pode ser negativo.") Integer estoqueMinimo,
 
-                @NotNull(message = "O fornecedor é obrigatório.") Long fornecedorId
+                @NotNull(message = "O fornecedor é obrigatório.") Long fornecedorId,
+
+                @PositiveOrZero(message = "A quantidade inicial não pode ser negativa.") Integer quantidadeInicial,
+
+                @Positive(message = "A categoria deve ser válida.") Long categoriaId
 
 ) {
 }

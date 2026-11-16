@@ -17,6 +17,8 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
         Optional<Categoria> findByIdAndEmpresaIdAndAtivoTrue(
                         Long id, Long empresaId);
 
+        Optional<Categoria> findByIdAndEmpresaId(Long id, Long empresaId);
+
         boolean existsByEmpresaIdAndNome(Long empresaId, String nome);
 
         boolean existsByEmpresaIdAndNomeAndIdNot(

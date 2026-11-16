@@ -8,11 +8,32 @@ export interface UserProfile {
   createdAt: string
 }
 
+export interface Company {
+  id: number
+  nome: string
+  cnpj: string | null
+  ativo: boolean
+  createdAt: string
+}
+
+export interface AuditEntry {
+  id: number
+  empresaId: number
+  usuarioId: number | null
+  entidade: string
+  registroId: number
+  acao: string
+  descricao: string
+  createdAt: string
+}
+
 export interface Product {
   id: number
   empresaId: number
   fornecedorId: number | null
   fornecedorNome: string | null
+  categoriaId: number | null
+  categoriaNome: string | null
   nome: string
   sku: string
   descricao: string | null

@@ -17,5 +17,7 @@ public record ProdutoResponse(
         Integer estoqueMinimo,
         Boolean ativo,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt) {
+        LocalDateTime updatedAt,
+        Long categoriaId,
+        String categoriaNome) {
 }

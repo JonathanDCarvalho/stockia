@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react"
 import { Card, EmptyState, PageHeader } from "../../components/ui"
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 import { useQuery } from "@tanstack/react-query"
 import { apiRequest, companyPath } from "../../lib/api-client"
 import type { Dashboard, Product, Movement } from "../../lib/contracts"
@@ -60,6 +61,14 @@ export function DashboardPage() {
       </div>
     )
   const data = summary.data!
+  const stockChart = [
+    {
+      name: "Estoque adequado",
+      value: Math.max(0, data.produtosCadastrados - data.estoqueBaixo),
+      color: "#8b5cf6",
+    },
+    { name: "Estoque baixo", value: data.estoqueBaixo, color: "#f59e0b" },
+  ]
   const stats = [
     {
       label: "Valor total do estoque",
@@ -150,28 +159,67 @@ export function DashboardPage() {
           </Card>
         ))}
       </div>
-      <div className="charts-grid">
-        <Card className="chart-card">
-          <div className="card-heading">
-            <h2>Valor por categoria</h2>
+      <Card className="chart-card mt-4">
+        <div className="card-heading">
+          <div>
+            <h2>Situação dos produtos</h2>
+            <p>Produtos ativos por nível de estoque</p>
           </div>
+          <button onClick={() => navigate("/produtos")}>
+            Ver produtos <ChevronRight size={15} />
+          </button>
+        </div>
+        {data.produtosCadastrados === 0 ? (
           <EmptyState
-            icon={<Tags size={30} />}
-            title="Distribuição por categoria pendente"
-            text="O detalhamento financeiro por categoria ainda está indisponível."
+            icon={<Package size={30} />}
+            title="Nenhum produto cadastrado"
+            text="O gráfico aparecerá quando houver produtos cadastrados."
           />
-        </Card>
-        <Card className="chart-card">
-          <div className="card-heading">
-            <h2>Valor por fornecedor</h2>
+        ) : (
+          <div className="donut-wrap">
+            <ResponsiveContainer width="55%" height={260}>
+              <PieChart accessibilityLayer>
+                <Pie
+                  data={stockChart.filter((item) => item.value > 0)}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={62}
+                  outerRadius={94}
+                  paddingAngle={3}
+                  stroke="none"
+                >
+                  {stockChart
+                    .filter((item) => item.value > 0)
+                    .map((item) => (
+                      <Cell key={item.name} fill={item.color} />
+                    ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: "#10152a",
+                    border: "1px solid #2b3354",
+                    borderRadius: 8,
+                    color: "#f1f5f9",
+                  }}
+                  itemStyle={{ color: "#f1f5f9" }}
+                  formatter={(value) =>
+                    `${formatNumber(Number(value))} produtos`
+                  }
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="chart-legend">
+              {stockChart.map((item) => (
+                <div key={item.name}>
+                  <i style={{ background: item.color }} />
+                  <span>{item.name}</span>
+                  <strong>{formatNumber(item.value)}</strong>
+                </div>
+              ))}
+            </div>
           </div>
-          <EmptyState
-            icon={<Truck size={30} />}
-            title="Distribuição por fornecedor pendente"
-            text="O detalhamento financeiro por fornecedor ainda está indisponível."
-          />
-        </Card>
-      </div>
+        )}
+      </Card>
       <div className="bottom-grid">
         <Card className="list-card">
           <div className="card-heading">

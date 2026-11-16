@@ -4,11 +4,15 @@ package com.stockia.api.service;
 import com.stockia.api.entity.Empresa;
 import com.stockia.api.entity.Fornecedor;
 import com.stockia.api.entity.Produto;
+import com.stockia.api.entity.Categoria;
+import com.stockia.api.dto.request.MovimentacaoEstoqueRequest;
+import com.stockia.api.enums.TipoMovimentacao;
 import com.stockia.api.exception.RecursoNaoEncontradoException;
 import com.stockia.api.exception.RecursoConflitoException;
 import com.stockia.api.repository.EmpresaRepository;
 import com.stockia.api.repository.FornecedorRepository;
 import com.stockia.api.repository.ProdutoRepository;
+import com.stockia.api.repository.CategoriaRepository;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,17 +28,23 @@ public class ProdutoService {
         private final EmpresaRepository empresaRepository;
         private final FornecedorRepository fornecedorRepository;
         private final AuditoriaService auditoriaService;
+        private final MovimentacaoEstoqueService movimentacaoService;
+        private final CategoriaRepository categoriaRepository;
 
         public ProdutoService(
                         ProdutoRepository produtoRepository,
                         EmpresaRepository empresaRepository,
                         FornecedorRepository fornecedorRepository,
-                        AuditoriaService auditoriaService) {
+                        AuditoriaService auditoriaService,
+                        MovimentacaoEstoqueService movimentacaoService,
+                        CategoriaRepository categoriaRepository) {
 
                 this.produtoRepository = produtoRepository;
                 this.empresaRepository = empresaRepository;
                 this.fornecedorRepository = fornecedorRepository;
                 this.auditoriaService = auditoriaService;
+                this.movimentacaoService = movimentacaoService;
+                this.categoriaRepository = categoriaRepository;
         }
 
         @Transactional
@@ -43,12 +53,40 @@ public class ProdutoService {
                         Long fornecedorId,
                         Produto produto) {
 
+                return cadastrar(empresaId, fornecedorId, produto, null);
+        }
+
+        @Transactional
+        public Produto cadastrar(
+                        Long empresaId,
+                        Long fornecedorId,
+                        Produto produto,
+                        Integer quantidadeInicial) {
+
+                return cadastrar(empresaId, fornecedorId, produto, quantidadeInicial, null);
+        }
+
+        @Transactional
+        public Produto cadastrar(
+                        Long empresaId,
+                        Long fornecedorId,
+                        Produto produto,
+                        Integer quantidadeInicial,
+                        Long categoriaId) {
+
+                if (quantidadeInicial != null && quantidadeInicial < 0) {
+                        throw new IllegalArgumentException(
+                                        "A quantidade inicial não pode ser negativa.");
+                }
+
                 Empresa empresa = buscarEmpresaAtiva(empresaId);
 
                 validarDados(produto);
 
                 Fornecedor fornecedor = buscarFornecedorAtivo(
                                 empresaId, fornecedorId);
+
+                Categoria categoria = buscarCategoria(empresaId, categoriaId, null);
 
                 String sku = normalizarSku(produto.getSku());
 
@@ -65,6 +103,7 @@ public class ProdutoService {
                 produto.setQuantidadeEstoque(0);
                 produto.setEstoqueMinimo(produto.getEstoqueMinimo());
                 produto.setFornecedor(fornecedor);
+                produto.setCategoria(categoria);
                 produto.setAtivo(true);
                 produto.setEmpresa(empresa);
 
@@ -76,6 +115,16 @@ public class ProdutoService {
                                 produtoSalvo.getId(),
                                 "CRIAR",
                                 "Produto cadastrado: " + produtoSalvo.getNome());
+
+                if (quantidadeInicial != null && quantidadeInicial > 0) {
+                        movimentacaoService.registrar(
+                                        empresaId,
+                                        produtoSalvo.getId(),
+                                        new MovimentacaoEstoqueRequest(
+                                                        TipoMovimentacao.ENTRADA,
+                                                        quantidadeInicial,
+                                                        "Estoque inicial"));
+                }
 
                 return produtoSalvo;
         }
@@ -109,6 +158,19 @@ public class ProdutoService {
                         Produto dadosAtualizados) {
 
                 Produto produto = buscarPorId(empresaId, produtoId);
+                Long categoriaId = produto.getCategoria() == null ? null : produto.getCategoria().getId();
+                return atualizar(empresaId, produtoId, fornecedorId, dadosAtualizados, categoriaId);
+        }
+
+        @Transactional
+        public Produto atualizar(
+                        Long empresaId,
+                        Long produtoId,
+                        Long fornecedorId,
+                        Produto dadosAtualizados,
+                        Long categoriaId) {
+
+                Produto produto = buscarPorId(empresaId, produtoId);
 
                 validarDados(dadosAtualizados);
 
@@ -133,6 +195,7 @@ public class ProdutoService {
                 produto.setPrecoVenda(dadosAtualizados.getPrecoVenda());
                 produto.setEstoqueMinimo(dadosAtualizados.getEstoqueMinimo());
                 produto.setFornecedor(fornecedor);
+                produto.setCategoria(buscarCategoria(empresaId, categoriaId, produto.getCategoria()));
 
                 Produto produtoSalvo = produtoRepository.save(produto);
 
@@ -180,6 +243,23 @@ public class ProdutoService {
                                                 fornecedorId, empresaId)
                                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                                                 "Fornecedor não encontrado ou inativo nesta empresa."));
+        }
+
+        private Categoria buscarCategoria(Long empresaId, Long categoriaId, Categoria categoriaAtual) {
+                if (categoriaId == null) {
+                        return null;
+                }
+
+                Categoria categoria = categoriaRepository.findByIdAndEmpresaId(categoriaId, empresaId)
+                                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                                                "Categoria não encontrada nesta empresa."));
+
+                boolean mesmaCategoria = categoriaAtual != null && categoriaId.equals(categoriaAtual.getId());
+                if (!Boolean.TRUE.equals(categoria.getAtivo()) && !mesmaCategoria) {
+                        throw new RecursoNaoEncontradoException("Categoria não encontrada ou inativa nesta empresa.");
+                }
+
+                return categoria;
         }
 
         private void validarDados(Produto produto) {
