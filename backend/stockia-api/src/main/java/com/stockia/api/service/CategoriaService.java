@@ -12,20 +12,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
     private final EmpresaRepository empresaRepository;
+    private final AuditoriaService auditoriaService;
 
     public CategoriaService(
             CategoriaRepository categoriaRepository,
-            EmpresaRepository empresaRepository) {
+            EmpresaRepository empresaRepository,
+            AuditoriaService auditoriaService) {
 
         this.categoriaRepository = categoriaRepository;
         this.empresaRepository = empresaRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
@@ -47,7 +49,16 @@ public class CategoriaService {
         categoria.setAtivo(true);
         categoria.setEmpresa(empresa);
 
-        return categoriaRepository.save(categoria);
+        Categoria categoriaSalva = categoriaRepository.save(categoria);
+
+        auditoriaService.registrar(
+                empresa,
+                "CATEGORIA",
+                categoriaSalva.getId(),
+                "CRIAR",
+                "Categoria cadastrada: " + categoriaSalva.getNome());
+
+        return categoriaSalva;
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +104,16 @@ public class CategoriaService {
         categoria.setDescricao(
                 normalizarDescricao(dadosAtualizados.getDescricao()));
 
-        return categoriaRepository.save(categoria);
+        Categoria categoriaSalva = categoriaRepository.save(categoria);
+
+        auditoriaService.registrar(
+                categoriaSalva.getEmpresa(),
+                "CATEGORIA",
+                categoriaSalva.getId(),
+                "ATUALIZAR",
+                "Categoria atualizada: " + categoriaSalva.getNome());
+
+        return categoriaSalva;
     }
 
     @Transactional
@@ -104,6 +124,13 @@ public class CategoriaService {
         categoria.setAtivo(false);
 
         categoriaRepository.save(categoria);
+
+        auditoriaService.registrar(
+                categoria.getEmpresa(),
+                "CATEGORIA",
+                categoria.getId(),
+                "DESATIVAR",
+                "Categoria desativada: " + categoria.getNome());
     }
 
     private Empresa buscarEmpresaAtiva(Long empresaId) {
@@ -116,18 +143,22 @@ public class CategoriaService {
 
     private void validarDados(Categoria categoria) {
 
-        if (categoria.getNome() == null || categoria.getNome().isBlank()) {
+        if (categoria.getNome() == null ||
+                categoria.getNome().isBlank()) {
+
             throw new IllegalArgumentException(
                     "O nome da categoria é obrigatório.");
         }
 
         if (categoria.getNome().trim().length() > 100) {
+
             throw new IllegalArgumentException(
                     "O nome deve ter no máximo 100 caracteres.");
         }
     }
 
     private String normalizarNome(String nome) {
+
         return nome.trim();
     }
 

@@ -9,18 +9,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FornecedorRepository extends JpaRepository<Fornecedor, Long> {
 
-    List<Fornecedor> findAllByEmpresaIdAndAtivoTrue(Long empresaId);
+        long countByEmpresaIdAndAtivoTrue(Long empresaId);
 
-    java.util.Optional<Fornecedor> findByIdAndEmpresaIdAndAtivoTrue(
-            Long id,
-            Long empresaId);
+        List<Fornecedor> findAllByEmpresaIdAndAtivoTrue(Long empresaId);
 
-    boolean existsByEmpresaIdAndDocumento(
-            Long empresaId,
-            String documento);
+        java.util.Optional<Fornecedor> findByIdAndEmpresaIdAndAtivoTrue(
+                        Long id,
+                        Long empresaId);
 
-    boolean existsByEmpresaIdAndDocumentoAndIdNot(
-            Long empresaId,
-            String documento,
-            Long id);
+        boolean existsByEmpresaIdAndDocumento(
+                        Long empresaId,
+                        String documento);
+
+        boolean existsByEmpresaIdAndDocumentoAndIdNot(
+                        Long empresaId,
+                        String documento,
+                        Long id);
 }

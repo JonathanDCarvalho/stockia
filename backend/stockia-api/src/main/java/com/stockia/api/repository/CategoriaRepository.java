@@ -10,13 +10,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 
-    List<Categoria> findAllByEmpresaIdAndAtivoTrue(Long empresaId);
+        long countByEmpresaIdAndAtivoTrue(Long empresaId);
 
-    Optional<Categoria> findByIdAndEmpresaIdAndAtivoTrue(
-            Long id, Long empresaId);
+        List<Categoria> findAllByEmpresaIdAndAtivoTrue(Long empresaId);
 
-    boolean existsByEmpresaIdAndNome(Long empresaId, String nome);
+        Optional<Categoria> findByIdAndEmpresaIdAndAtivoTrue(
+                        Long id, Long empresaId);
 
-    boolean existsByEmpresaIdAndNomeAndIdNot(
-            Long empresaId, String nome, Long id);
+        boolean existsByEmpresaIdAndNome(Long empresaId, String nome);
+
+        boolean existsByEmpresaIdAndNomeAndIdNot(
+                        Long empresaId, String nome, Long id);
 }

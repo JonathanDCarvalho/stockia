@@ -1,10 +1,10 @@
+
 package com.stockia.api.service;
 
 import com.stockia.api.entity.Empresa;
 import com.stockia.api.exception.RecursoNaoEncontradoException;
 import com.stockia.api.repository.EmpresaRepository;
 import com.stockia.api.validation.CnpjValidator;
-import com.stockia.api.exception.RecursoNaoEncontradoException;
 
 import java.util.List;
 
@@ -15,9 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmpresaService {
 
     private final EmpresaRepository empresaRepository;
+    private final AuditoriaService auditoriaService;
 
-    public EmpresaService(EmpresaRepository empresaRepository) {
+    public EmpresaService(
+            EmpresaRepository empresaRepository,
+            AuditoriaService auditoriaService) {
+
         this.empresaRepository = empresaRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
@@ -45,15 +50,26 @@ public class EmpresaService {
             }
 
             empresa.setCnpj(cnpj);
+
         } else {
             empresa.setCnpj(null);
         }
 
-        return empresaRepository.save(empresa);
+        Empresa empresaSalva = empresaRepository.save(empresa);
+
+        auditoriaService.registrar(
+                empresaSalva,
+                "EMPRESA",
+                empresaSalva.getId(),
+                "CRIAR",
+                "Empresa cadastrada: " + empresaSalva.getNome());
+
+        return empresaSalva;
     }
 
     @Transactional(readOnly = true)
     public List<Empresa> listarTodos() {
+
         return empresaRepository.findAllByAtivoTrue();
     }
 
@@ -72,13 +88,23 @@ public class EmpresaService {
 
         if (dadosAtualizados.getNome() == null ||
                 dadosAtualizados.getNome().isBlank()) {
+
             throw new IllegalArgumentException(
                     "O nome da empresa é obrigatório.");
         }
 
         empresa.setNome(dadosAtualizados.getNome().trim());
 
-        return empresaRepository.save(empresa);
+        Empresa empresaSalva = empresaRepository.save(empresa);
+
+        auditoriaService.registrar(
+                empresaSalva,
+                "EMPRESA",
+                empresaSalva.getId(),
+                "ATUALIZAR",
+                "Empresa atualizada: " + empresaSalva.getNome());
+
+        return empresaSalva;
     }
 
     @Transactional
@@ -89,6 +115,12 @@ public class EmpresaService {
         empresa.setAtivo(false);
 
         empresaRepository.save(empresa);
-    }
 
+        auditoriaService.registrar(
+                empresa,
+                "EMPRESA",
+                empresa.getId(),
+                "DESATIVAR",
+                "Empresa desativada: " + empresa.getNome());
+    }
 }

@@ -13,20 +13,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Locale;
 
 @Service
 public class FornecedorService {
 
     private final FornecedorRepository fornecedorRepository;
     private final EmpresaRepository empresaRepository;
+    private final AuditoriaService auditoriaService;
 
     public FornecedorService(
             FornecedorRepository fornecedorRepository,
-            EmpresaRepository empresaRepository) {
+            EmpresaRepository empresaRepository,
+            AuditoriaService auditoriaService) {
 
         this.fornecedorRepository = fornecedorRepository;
         this.empresaRepository = empresaRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @Transactional
@@ -57,7 +59,16 @@ public class FornecedorService {
         fornecedor.setAtivo(true);
         fornecedor.setEmpresa(empresa);
 
-        return fornecedorRepository.save(fornecedor);
+        Fornecedor fornecedorSalvo = fornecedorRepository.save(fornecedor);
+
+        auditoriaService.registrar(
+                empresa,
+                "FORNECEDOR",
+                fornecedorSalvo.getId(),
+                "CRIAR",
+                "Fornecedor cadastrado: " + fornecedorSalvo.getNome());
+
+        return fornecedorSalvo;
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +120,16 @@ public class FornecedorService {
         fornecedor.setTelefone(normalizarTexto(dadosAtualizados.getTelefone()));
         fornecedor.setContato(normalizarTexto(dadosAtualizados.getContato()));
 
-        return fornecedorRepository.save(fornecedor);
+        Fornecedor fornecedorSalvo = fornecedorRepository.save(fornecedor);
+
+        auditoriaService.registrar(
+                fornecedorSalvo.getEmpresa(),
+                "FORNECEDOR",
+                fornecedorSalvo.getId(),
+                "ATUALIZAR",
+                "Fornecedor atualizado: " + fornecedorSalvo.getNome());
+
+        return fornecedorSalvo;
     }
 
     @Transactional
@@ -120,6 +140,13 @@ public class FornecedorService {
         fornecedor.setAtivo(false);
 
         fornecedorRepository.save(fornecedor);
+
+        auditoriaService.registrar(
+                fornecedor.getEmpresa(),
+                "FORNECEDOR",
+                fornecedor.getId(),
+                "DESATIVAR",
+                "Fornecedor desativado: " + fornecedor.getNome());
     }
 
     private Empresa buscarEmpresaAtiva(Long empresaId) {
